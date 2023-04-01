@@ -4,6 +4,21 @@ import pandas as pd
 import pygsheets
 import re
 import requests
+import yagmail
+
+thresholds = {
+    "contact@dantebarbieri.dev": {
+        "Oak": 1550,
+        "Cedar": 1500,
+        "Magnolia": 1500,
+        "Sage": 1700,
+        "Laurel": 1700,
+        "Aster": 1775,
+    },
+    "anjalicutiesegu@gmail.com": {
+        "": 1410 # All
+    }
+}
 
 gc = pygsheets.authorize(service_file='./creds.json')
 
@@ -23,6 +38,16 @@ try:
             startRow = int(text)
 except(FileNotFoundError):
     pass
+
+sender_email = "dantevbarbieri@gmail.com"
+email_password = ""
+try:
+    with open('/home/azureuser/email_password') as f:
+        email_password = f.read()
+except(FileNotFoundError):
+    pass
+
+yag = yagmail.SMTP(sender_email, email_password)
 
 jsonKeysRE = re.compile(r'^(\s*)(\w+):', re.MULTILINE)
 
@@ -58,6 +83,14 @@ for floorplan in js["floorplans"]:
     availableDates.append(floorplan['availableDate'])
     unitCounts.append(len(floorplan["unitList"]))
     unitLists.append(floorplan['unitList'])
+    if "Renovated" in floorplan["name"]:
+        for email, limits in thresholds.items():
+            for name, limit in limits.items():
+                if name in floorplan["name"] and floorplan["lowPrice"] < limit:
+                    print(f"Sending an email from {sender_email} to {email} about {floorplan['name']} which is ${floorplan['lowPrice']}/mo which is below their limit of ${limit}/mo.")
+                    subject = f'Riata Price Alert {floorplan["name"]} is ${floorplan["lowPrice"]}/mo which is below your limit of ${limit}/mo'
+                    contents = f'{floorplan["name"]} ({floorplan["sqft"]} sq. ft.) with {floorplan["beds"]} bed(s) and {floorplan["baths"]} bath(s) is starting at ${floorplan["lowPrice"]}/mo which is below your limit of ${limit}/mo. The high price is ${floorplan["highPrice"]}/mo. The earliest available date is {floorplan["availableDate"]} (THIS MAY NOT MATCH THE DATE OF THE UNIT WITH THE LOWEST PRICE!!). There are {len(floorplan["unitList"])} units available. The unit list is {floorplan["unitList"]}. For more information, go to {URL}. Apply today at https://riata.com/.'
+                    yag.send(email, subject, contents)
 
 df['date'] = dates
 df['name'] = names
