@@ -7,15 +7,10 @@ import yagmail
 
 thresholds = {
     "contact@dantebarbieri.dev": {
-        "Oak": 1450,
-        "Cedar": 1500,
-        "Magnolia": 1500,
-        "Sage": 1700,
-        "Laurel": 1700,
-        "Aster": 1775,
+        "": 1350 # All
     },
     "anjalicutiesegu@gmail.com": {
-        "": 1410 # All
+        "": 1350 # All
     }
 }
 
